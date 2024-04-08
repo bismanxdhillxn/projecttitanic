@@ -1,76 +1,64 @@
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score
 
 # Load the dataset
-training_data = pd.read_csv("C:/Users/Admin/Downloads/train.csv")
-testing_data = pd.read_csv("C:/Users/Admin/Downloads/test.csv")
-gender_submission_data = pd.read_csv("C:/Users/Admin/Downloads/gender_submission.csv")
+titanic_df = pd.read_csv('titanic.csv')
 
-print(training_data.head())
-print(training_data.isnull().sum())
+# Feature Engineering
+sex_encoded = pd.get_dummies(titanic_df['Sex'], drop_first=True)
+embarked_encoded = pd.get_dummies(titanic_df['Embarked'], drop_first=True)
+titanic_df.drop(columns=['Name', 'Ticket', 'Cabin', 'Sex', 'Embarked', 'PassengerId'], inplace=True)
+titanic_df = pd.concat([titanic_df, sex_encoded, embarked_encoded], axis=1)
 
-sns.countplot(x='Survived', data=training_data)
-plt.show()
+# Handling Missing Values
+def fill_age(age, pclass):
+    if pd.isnull(age):
+        if pclass == 1:
+            return 38
+        elif pclass == 2:
+            return 30
+        else:
+            return 25
+    else:
+        return age
 
-sns.countplot(x='Survived', hue='Sex', data=training_data)
-plt.show()
+titanic_df['Age'] = titanic_df.apply(lambda x: fill_age(x['Age'], x['Pclass']), axis=1)
 
-sns.countplot(x='Survived', hue='Pclass', data=training_data)
-plt.show()
+# Train Test Split
+features = titanic_df.drop(columns=['Survived'])
+target = titanic_df['Survived']
+X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
 
-sns.countplot(x='Survived', hue='Embarked', data=training_data)
-plt.show()
-
-# Handle missing values
-training_data['Age'].fillna(training_data['Age'].median(), inplace=True)
-training_data['Embarked'].fillna(training_data['Embarked'].mode()[0], inplace=True)
-
-# Feature engineering
-training_data.drop(['PassengerId', 'Name', 'Ticket', 'Cabin'], axis=1, inplace=True)
-training_data['Gender'] = training_data['Sex'].map({'male': 0, 'female': 1})
-training_data['Port'] = training_data['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
-
-# Split the data into features (X) and target (y)
-X = training_data.drop('Survived', axis=1)
-y = training_data['Survived']
-
-# Split data into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Scale the features
+# Standardization
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
-X_val_scaled = scaler.transform(X_val)
+X_test_scaled = scaler.transform(X_test)
 
-print("Shape of X_train_scaled:", X_train_scaled.shape)
-print("Shape of X_val_scaled:", X_val_scaled.shape)
+# Logistic Regression
+logistic_model = LogisticRegression()
+logistic_model.fit(X_train_scaled, y_train)
+y_pred_lr = logistic_model.predict(X_test_scaled)
+lr_accuracy = accuracy_score(y_test, y_pred_lr)
+print("Logistic Regression Accuracy Score:", lr_accuracy)
 
-# Train and evaluate SVM model
-svm_classifier = SVC()
-svm_classifier.fit(X_train_scaled, y_train)
-y_pred_svm = svm_classifier.predict(X_val_scaled)
-accuracy_svm = accuracy_score(y_val, y_pred_svm)
-print("SVM Accuracy:", accuracy_svm)
+# Support Vector Machine
+svm_model = SVC(kernel='linear', C=1)
+svm_model.fit(X_train_scaled, y_train)
+y_pred_svm = svm_model.predict(X_test_scaled)
+svm_accuracy = accuracy_score(y_test, y_pred_svm)
+print("SVM Accuracy Score:", svm_accuracy)
 
-# Train and evaluate Logistic Regression model
-logistic_classifier = LogisticRegression()
-logistic_classifier.fit(X_train_scaled, y_train)
-y_pred_lr = logistic_classifier.predict(X_val_scaled)
-accuracy_lr = accuracy_score(y_val, y_pred_lr)
-print("Logistic Regression Accuracy:", accuracy_lr)
-
-# Train and evaluate Decision Tree model
-tree_classifier = DecisionTreeClassifier()
-tree_classifier.fit(X_train_scaled, y_train)
-y_pred_tree = tree_classifier.predict(X_val_scaled)
-accuracy_tree = accuracy_score(y_val, y_pred_tree)
-print("Decision Tree Accuracy:", accuracy_tree)
+# Decision Tree Classifier
+tree_model = DecisionTreeClassifier()
+tree_model.fit(X_train_scaled, y_train)
+y_pred_tree = tree_model.predict(X_test_scaled)
+tree_accuracy = accuracy_score(y_test, y_pred_tree)
+print("Decision Tree Accuracy Score:", tree_accuracy)
