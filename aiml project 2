@@ -9,16 +9,16 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 
-# Load the dataset
-titanic_df = pd.read_csv('titanic.csv')
 
-# Feature Engineering
-sex_encoded = pd.get_dummies(titanic_df['Sex'], drop_first=True)
-embarked_encoded = pd.get_dummies(titanic_df['Embarked'], drop_first=True)
-titanic_df.drop(columns=['Name', 'Ticket', 'Cabin', 'Sex', 'Embarked', 'PassengerId'], inplace=True)
-titanic_df = pd.concat([titanic_df, sex_encoded, embarked_encoded], axis=1)
+df_titanic = pd.read_csv('titanic.csv')
 
-# Handling Missing Values
+
+encoded_sex = pd.get_dummies(df_titanic['Sex'], drop_first=True)
+encoded_embarked = pd.get_dummies(df_titanic['Embarked'], drop_first=True)
+df_titanic.drop(columns=['Name', 'Ticket', 'Cabin', 'Sex', 'Embarked', 'PassengerId'], inplace=True)
+df_titanic = pd.concat([df_titanic, encoded_sex, encoded_embarked], axis=1)
+
+
 def fill_age(age, pclass):
     if pd.isnull(age):
         if pclass == 1:
@@ -30,35 +30,34 @@ def fill_age(age, pclass):
     else:
         return age
 
-titanic_df['Age'] = titanic_df.apply(lambda x: fill_age(x['Age'], x['Pclass']), axis=1)
+df_titanic['Age'] = df_titanic.apply(lambda x: fill_age(x['Age'], x['Pclass']), axis=1)
 
-# Train Test Split
-features = titanic_df.drop(columns=['Survived'])
-target = titanic_df['Survived']
-X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+X_data = df_titanic.drop(columns=['Survived'])
+y_target = df_titanic['Survived']
+X_train, X_test, y_train, y_test = train_test_split(X_data, y_target, test_size=0.2, random_state=42)
 
-# Standardization
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
 
-# Logistic Regression
-logistic_model = LogisticRegression()
-logistic_model.fit(X_train_scaled, y_train)
-y_pred_lr = logistic_model.predict(X_test_scaled)
-lr_accuracy = accuracy_score(y_test, y_pred_lr)
-print("Logistic Regression Accuracy Score:", lr_accuracy)
+scaler_titanic = StandardScaler()
+X_train_scaled = scaler_titanic.fit_transform(X_train)
+X_test_scaled = scaler_titanic.transform(X_test)
 
-# Support Vector Machine
-svm_model = SVC(kernel='linear', C=1)
-svm_model.fit(X_train_scaled, y_train)
-y_pred_svm = svm_model.predict(X_test_scaled)
-svm_accuracy = accuracy_score(y_test, y_pred_svm)
-print("SVM Accuracy Score:", svm_accuracy)
 
-# Decision Tree Classifier
-tree_model = DecisionTreeClassifier()
-tree_model.fit(X_train_scaled, y_train)
-y_pred_tree = tree_model.predict(X_test_scaled)
-tree_accuracy = accuracy_score(y_test, y_pred_tree)
-print("Decision Tree Accuracy Score:", tree_accuracy)
+log_model_titanic = LogisticRegression()
+log_model_titanic.fit(X_train_scaled, y_train)
+y_pred_log = log_model_titanic.predict(X_test_scaled)
+accuracy_log = accuracy_score(y_test, y_pred_log)
+print("Logistic Regression Accuracy Score:", accuracy_log)
+
+
+svm_model_titanic = SVC(kernel='linear', C=1)
+svm_model_titanic.fit(X_train_scaled, y_train)
+y_pred_svm = svm_model_titanic.predict(X_test_scaled)
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+print("SVM Accuracy Score:", accuracy_svm)
+
+
+tree_model_titanic = DecisionTreeClassifier()
+tree_model_titanic.fit(X_train_scaled, y_train)
+y_pred_tree = tree_model_titanic.predict(X_test_scaled)
+accuracy_tree = accuracy_score(y_test, y_pred_tree)
+print("Decision Tree Accuracy Score:", accuracy_tree)
